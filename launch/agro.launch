@@ -1,0 +1,67 @@
+<launch>
+  <!-- IMPORTANT! -->
+  <!-- This launch file should be called with some compulsory arguments: -->
+  <!-- 1- drone_id: the drone ID for the drone flying the mission (int) -->
+  <!-- 2- mission_id: the mission number (int) -->
+
+  <!-- Example: roslaunch iq_sim agro.launch drone_id:=15 mission_id:=24 -->
+
+  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find iq_sim)/worlds/agro.world"/>
+  </include>
+
+  <!-- Optional image viewer to get visual aide on the camera topic from the drone -->
+  <node pkg="image_view" type="image_view" name="image_view" args="image:=/webcam_down/image_raw _image_transport:=compressed">    
+    <param name="autosize" type="boolean" value="true"/>
+  </node>
+
+  <!-- Start software in the loop simulation -->
+  <node pkg="iq_sim" type="startsitl.sh" name="startsitl"
+        output="screen"
+  />
+  
+  <!-- Start QGroundControl (has an artificial sleep delay) -->
+  <node pkg="iq_sim" type="startqgroundcontrol.sh" name="startqgroundcontrol"
+        output="screen"
+  />
+
+  <!-- Start the ROS/MAVLink translator for GPS-related topics -->
+  <include file="$(find mavros)/launch/apm.launch">
+    <arg name="fcu_url" value="udp://:14551@"/>
+  </include>
+
+  <!-- Start GPS/Image sync module -->
+  <node pkg="iq_sim" type="syncDroneImage.py" name="syncDroneImage"
+        output="screen"
+  />
+
+  <!-- Start DB writer module -->
+  <node pkg="iq_sim" type="drone_camera_listener.py" name="Drone_Camera_Listener"
+        output="screen"
+        args="$(arg drone_id) $(arg mission_id)"
+  />
+
+  <!-- Issues with ROS Bag: -->
+  <!-- https://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
+  <!-- so we exclude the compressedDepth topics to supress error messages (topic is empty either way) -->
+
+  <!-- Start data collection in a new ROS Bag -->
+  <!-- http://wiki.ros.org/rosbag/Commandline#rosbag_record -->
+  <node pkg="rosbag" type="record" name="rosbag_record"
+    args=" --output-name $(find iq_sim)/data/rosbag/agro_drone_$(arg drone_id)_mission_$(arg mission_id).bag 
+           --regex '(.*)' 
+           --exclude '(.*)compressedDepth'">
+  </node>
+
+  <?ignore ### If needed, these can be uncommented
+  <!-- Start camera listener that writes to PostgreSQL -->
+  <node pkg="iq_sim" type="drone_camera_listener.py" name="drone_camera_listener"
+        output="screen" args="$(arg drone_id) $(arg mission_id)"
+  />
+  <node pkg="..." type="..." name="..." args="...">
+  </node>
+  ?>
+
+
+</launch>
