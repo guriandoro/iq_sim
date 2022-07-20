@@ -32,7 +32,7 @@
   </include>
 
   <!-- Start GPS/Image sync module -->
-  <node pkg="iq_sim" type="syncDroneImage.py" name="syncDroneImage"
+  <node pkg="iq_sim" type="sync_drone_image.py" name="sync_drone_image"
         output="screen"
   />
 
