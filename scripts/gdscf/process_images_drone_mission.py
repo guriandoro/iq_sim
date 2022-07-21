@@ -89,7 +89,7 @@ def get_k_means_centers(values_array=[]):
     
     return center, weighted_center
 
-def create_images(drone_id=1, mission_id=1, image_base_path="~", generate_images=False):
+def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", generate_images=False):
     width = 640
     height = 480
     row_length = 1920
@@ -297,7 +297,7 @@ if __name__ == '__main__':
 
     get_images_for_drone_from_database(drone_id, mission_id)
 
-    create_images(drone_id, mission_id, image_base_path, generate_images)
+    process_images_drone_mission(drone_id, mission_id, image_base_path, generate_images)
 
     if conn is not None:
         conn.close()
