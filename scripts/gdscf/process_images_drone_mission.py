@@ -46,6 +46,8 @@ def get_images_for_drone_from_database(drone_id=1, mission_id=1):
     cur.execute(pg_select_query,(str(drone_id),str(mission_id)))
     drone_images = cur.fetchall()
     print_debug("Retrieved "+str(len(drone_images))+" rows from database.")
+    conn.close()
+    print_debug('### Database connection closed.')
 
 # Returns the center and weighted center from an array, after executing K-means with k=2
 def get_k_means_centers(values_array=[]):
