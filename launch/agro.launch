@@ -11,18 +11,13 @@
     <arg name="world_name" value="$(find iq_sim)/worlds/agro.world"/>
   </include>
 
-  <!-- Optional image viewer to get visual aide on the camera topic from the drone -->
-  <node pkg="image_view" type="image_view" name="image_view" args="image:=/webcam_down/image_raw _image_transport:=compressed">    
-    <param name="autosize" type="boolean" value="true"/>
-  </node>
-
   <!-- Start software in the loop simulation -->
-  <node pkg="iq_sim" type="startsitl.sh" name="startsitl"
+  <node pkg="iq_sim" type="start_sitl.sh" name="start_sitl"
         output="screen"
   />
   
   <!-- Start QGroundControl (has an artificial sleep delay) -->
-  <node pkg="iq_sim" type="startqgroundcontrol.sh" name="startqgroundcontrol"
+  <node pkg="iq_sim" type="start_qgroundcontrol.sh" name="start_qgroundcontrol"
         output="screen"
   />
 
@@ -37,7 +32,7 @@
   />
 
   <!-- Start DB writer module -->
-  <node pkg="iq_sim" type="drone_camera_listener.py" name="Drone_Camera_Listener"
+  <node pkg="iq_sim" type="drone_camera_listener.py" name="drone_camera_listener"
         output="screen"
         args="$(arg drone_id) $(arg mission_id)"
   />
@@ -55,13 +50,14 @@
   </node>
 
   <?ignore ### If needed, these can be uncommented
-  <!-- Start camera listener that writes to PostgreSQL -->
-  <node pkg="iq_sim" type="drone_camera_listener.py" name="drone_camera_listener"
-        output="screen" args="$(arg drone_id) $(arg mission_id)"
-  />
+  <!-- Optional image viewer to get visual aide on the camera topic from the drone -->
+  <node pkg="image_view" type="image_view" name="image_view" args="image:=/webcam_down/image_raw _image_transport:=compressed">    
+    <param name="autosize" type="boolean" value="true"/>
+  </node>
+
+  <!-- Example node syntax -->
   <node pkg="..." type="..." name="..." args="...">
   </node>
   ?>
-
 
 </launch>
