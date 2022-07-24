@@ -56,7 +56,7 @@ def get_k_means_centers(values_array=[]):
     
     # Calculate regular center
     print_debug("Centers: "+str(kmeans_estimator.cluster_centers_))
-    center = int(abs(kmeans_estimator.cluster_centers_[1,0]-kmeans_estimator.cluster_centers_[0,0]))
+    center = int(abs((kmeans_estimator.cluster_centers_[1,0]-kmeans_estimator.cluster_centers_[0,0])/2))
     print_debug("Center: "+str(center))
     
     # Calculate population per cluster
@@ -83,10 +83,10 @@ def get_k_means_centers(values_array=[]):
     
     if center_min_pop > center_max_pop:
         # center = A + (B - A) * (Pop(B) / (Pop(A)+Pop(B)) )
-        weighted_center = int(center_min+(center_max-center_min)*(0.10+(center_max_pop/(center_min_pop+center_max_pop))))
+        weighted_center = int(center_min+(center_max-center_min)*(center_max_pop/(center_min_pop+center_max_pop)))
     else:
         # center = B - (B - A) * (Pop(A) / (Pop(A)+Pop(B)) )
-        weighted_center = int(center_max-(center_max-center_min)*(0.10+(center_min_pop/(center_min_pop+center_max_pop))))
+        weighted_center = int(center_max-(center_max-center_min)*(center_min_pop/(center_min_pop+center_max_pop)))
     print_debug("Weighted center: "+str(weighted_center))
     
     return center, weighted_center
