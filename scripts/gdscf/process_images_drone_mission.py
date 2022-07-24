@@ -42,6 +42,8 @@ def get_images_for_drone_from_database(drone_id=1, mission_id=1):
     global conn
     global drone_images
 
+    # Create a cursor.
+    cur = conn.cursor()
     pg_select_query="SELECT secs, nsecs, image FROM drone_camera_blob WHERE drone_id = %s AND mission_id = %s" # AND secs > 4540 AND secs < 4543"
     cur.execute(pg_select_query,(str(drone_id),str(mission_id)))
     drone_images = cur.fetchall()
@@ -148,9 +150,9 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
             # Add it to the array for K-means computation
             exg_value_kmeans_array.append(exg_bw_normalized)
         
-        print_debug("Max G: "+str(max_g)+" Min G: "+str(min_g))
-        print_debug("g_value_histogram: ")
-        print_debug(g_value_histogram)
+        #print_debug("Max G: "+str(max_g)+" Min G: "+str(min_g))
+        #print_debug("g_value_histogram: ")
+        #print_debug(g_value_histogram)
         
         g_value_histogram_list.append(g_value_histogram)
         exg_value_histogram_list.append(exg_value_histogram)
@@ -256,16 +258,17 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
         plt.savefig(image_base_path+"/histogram_plots__index_"+str(idx))
         plt.clf()
 
-    g_avg_value_cutoff = sum(g_value_centers) / len(g_value_centers)
-    exg_avg_value_cutoff = sum(exg_value_centers) / len(exg_value_centers)
+    g_avg_value_cutoff = int(sum(g_value_centers) / len(g_value_centers))
+    exg_avg_value_cutoff = int(sum(exg_value_centers) / len(exg_value_centers))
+
+    g_weighted_avg_value_cutoff = int(sum(g_value_weighted_centers) / len(g_value_weighted_centers))
+    exg_weighted_avg_value_cutoff = int(sum(exg_value_weighted_centers) / len(exg_value_weighted_centers))
 
     print("# Images processed: "+str(len(drone_images)))
-    print("# Centers for RGB:")
-    print(g_value_centers)
-    print("# Centers for ExG:")
-    print(exg_value_centers)
-    print("# RGB value average cutoff: "+str(int(g_avg_value_cutoff)))
-    print("# ExG average value cutoff: "+str(int(exg_avg_value_cutoff)))
+    print("# Centers for RGB: "+str(g_value_centers)  +"\n(weighted): "+str(g_value_weighted_centers))
+    print("# Centers for ExG: "+str(exg_value_centers)+"\n(weighted): "+str(exg_value_weighted_centers))
+    print("# RGB value average cutoff: "+str(g_avg_value_cutoff)  +"  (weighted): "+str(g_weighted_avg_value_cutoff))
+    print("# ExG average value cutoff: "+str(exg_avg_value_cutoff)+"  (weighted): "+str(exg_weighted_avg_value_cutoff))
 
 
 if __name__ == '__main__':
