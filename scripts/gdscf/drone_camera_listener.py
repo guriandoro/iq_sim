@@ -62,7 +62,7 @@ def callback(data):
             print_debug("### Disabling flight. in_flight: "+str(in_flight)+" rel_alt: "+str(data.drone_altitude))
 
     # If the drone is not flying, don't record image.
-    if (in_flight == 0) && debug:
+    if (in_flight == 0) and debug:
         rospy.loginfo("### Drone is not flying. Not recording received image.")
         return
 
@@ -104,6 +104,7 @@ def callback(data):
     conn.commit()
     
     if debug:
+        rospy.loginfo("The GPS values are (lat,lon): ("+str(data.drone_latitude)+","+str(data.drone_longitude)+") -- altitude: "+str(data.drone_altitude))
         count = cur.rowcount
         rospy.loginfo("Inserted in drone_camera_blob table: "+str(count)+" records")
         rospy.loginfo("")
@@ -123,8 +124,8 @@ if __name__ == '__main__':
     # Default drone info (will be overwritten).
     drone_id = 1
     mission_id = 1
-    # Default debug outputs. Change to False if less verbosity is needed.
-    debug = True
+    # Default debug outputs. Change to True if more verbosity is needed.
+    debug = False
 
     print_debug("### Arguments passed: "+str(len(sys.argv)))
 
