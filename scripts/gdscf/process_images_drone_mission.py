@@ -153,6 +153,8 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
         #print_debug("Max G: "+str(max_g)+" Min G: "+str(min_g))
         #print_debug("g_value_histogram: ")
         #print_debug(g_value_histogram)
+        #print_debug("exg_value_histogram: ")
+        #print_debug(exg_value_histogram)
         
         g_value_histogram_list.append(g_value_histogram)
         exg_value_histogram_list.append(exg_value_histogram)
