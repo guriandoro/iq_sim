@@ -245,20 +245,20 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
             drone_img_2x3_path=image_base_path+"/vegetation_indexes__drone_"+str(drone_id)+"_mission_"+str(mission_id)+"_image_"+str(drone_img_data[0])+"."+str(drone_img_data[1])+".png"
             drone_img_2x3.save(drone_img_2x3_path)
             
-    print("\n### Image processing finished.")
-    
-    # Plot histograms
-    for idx in range(len(g_value_histogram_list)):
-        plt.subplot(1,2,1)
-        plt.plot(X256, g_value_histogram_list[idx], fillstyle="none")
-        plt.title("Green values histogram.")
-    
-        plt.subplot(1,2,2)
-        plt.plot(X512, exg_value_histogram_list[idx], fillstyle="none")
-        plt.title("Excess green values histogram.")
+            # Plot histograms
+            for idx in range(len(g_value_histogram_list)):
+                plt.subplot(1,2,1)
+                plt.plot(X256, g_value_histogram_list[idx], fillstyle="none")
+                plt.title("Green values histogram.")
+                
+                plt.subplot(1,2,2)
+                plt.plot(X512, exg_value_histogram_list[idx], fillstyle="none")
+                plt.title("Excess green values histogram.")
+                
+                plt.savefig(image_base_path+"/histogram_plots__index_"+str(idx))
+                plt.clf()
 
-        plt.savefig(image_base_path+"/histogram_plots__index_"+str(idx))
-        plt.clf()
+    print("\n### Image processing finished.")
 
     g_avg_value_cutoff = int(sum(g_value_centers) / len(g_value_centers))
     exg_avg_value_cutoff = int(sum(exg_value_centers) / len(exg_value_centers))
