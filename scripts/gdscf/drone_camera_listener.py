@@ -12,6 +12,8 @@ import sys
 import struct
 # PostgreSQL driver
 import psycopg2
+# To get metrics on time
+import time
 
 # Connection to postgres instance (global)
 conn = None
@@ -88,25 +90,29 @@ def callback(data):
     cur = conn.cursor()
     
     # Insert into control table.
+    conn_start=time.time_ns()
     insert_query = """ INSERT INTO drone_camera (drone_id, mission_id, secs, nsecs, cell_R, cell_G, cell_B) VALUES (%s,%s,%s,%s,%s,%s,%s)"""
     row = (drone_id, mission_id, data.header.stamp.secs, data.header.stamp.nsecs, cell_R, cell_G, cell_B)
     cur.execute(insert_query, row)
     conn.commit()
+    conn_end=time.time_ns()
     
     if debug:
         count = cur.rowcount
-        rospy.loginfo("Inserted in drone_camera table: "+str(count)+" records")
+        rospy.loginfo("Inserted in drone_camera table: "+str(count)+" records in: "+str(int((conn_end-conn_start)/1000/1000))+" ms.")
     
     # Insert into table with all metadata and data.
+    conn_start=time.time_ns()
     insert_query = """ INSERT INTO drone_camera_blob (drone_id, mission_id, secs, nsecs, latitude, longitude, altitude, image) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"""
     row = (drone_id, mission_id, data.header.stamp.secs, data.header.stamp.nsecs, data.drone_latitude, data.drone_longitude, data.drone_altitude, data.image_data)
     cur.execute(insert_query, row)
     conn.commit()
+    conn_end=time.time_ns()
     
     if debug:
         rospy.loginfo("The GPS values are (lat,lon): ("+str(data.drone_latitude)+","+str(data.drone_longitude)+") -- altitude: "+str(data.drone_altitude))
         count = cur.rowcount
-        rospy.loginfo("Inserted in drone_camera_blob table: "+str(count)+" records")
+        rospy.loginfo("Inserted in drone_camera_blob table: "+str(count)+" records in: "+str(int((conn_end-conn_start)/1000/1000))+" ms.")
         rospy.loginfo("")
 
 def listener():
