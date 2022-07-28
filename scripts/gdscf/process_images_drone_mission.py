@@ -10,6 +10,8 @@ from PIL import Image
 import matplotlib.pyplot as plt
 # To get k-means data
 from sklearn.cluster import KMeans
+# To test another implementation of k-means
+#from sklearn.cluster import MiniBatchKMeans
 
 def print_debug(message):
     if debug:
@@ -44,6 +46,7 @@ def get_images_for_drone_from_database(drone_id=1, mission_id=1):
 
     # Create a cursor.
     cur = conn.cursor()
+    print("### Getting images from database.")
     pg_select_query="SELECT secs, nsecs, image FROM drone_camera_blob WHERE drone_id = %s AND mission_id = %s" # AND secs > 4540 AND secs < 4543"
     cur.execute(pg_select_query,(str(drone_id),str(mission_id)))
     drone_images = cur.fetchall()
@@ -55,6 +58,7 @@ def get_images_for_drone_from_database(drone_id=1, mission_id=1):
 def get_k_means_centers(values_array=[]):
     # Compute K-means centers for the array
     kmeans_estimator = KMeans(n_clusters=2).fit([(x,0) for x in values_array])
+    #kmeans_estimator = MiniBatchKMeans(n_clusters=2).fit([(x,0) for x in values_array])
     
     # Calculate regular center
     print_debug("Centers: "+str(kmeans_estimator.cluster_centers_))
