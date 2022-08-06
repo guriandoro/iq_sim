@@ -24,7 +24,7 @@ def connect():
         
         # Get connection (tune connection string as needed).
         # TODO: add success/error checks
-        conn = psycopg2.connect(host="192.168.1.3", dbname="gdscf", user="postgres", password="postgres")
+        conn = psycopg2.connect(host="pgdb", dbname="gdscf", user="postgres", password="postgres")
     
         if debug:
             # Create a cursor.
@@ -55,16 +55,20 @@ def get_images_for_drone_from_database(drone_id=1, mission_id=1):
     print_debug('### Database connection closed.')
 
 # Returns the center and weighted center from an array, after executing K-means with k=2
-def get_k_means_centers(values_array=[]):
+def get_k_means_centers(values_array=[], centers=2):
     # Compute K-means centers for the array
-    kmeans_estimator = KMeans(n_clusters=2).fit([(x,0) for x in values_array])
+    kmeans_estimator = KMeans(n_clusters=centers).fit([(x,0) for x in values_array])
     #kmeans_estimator = MiniBatchKMeans(n_clusters=2).fit([(x,0) for x in values_array])
     
+    if centers == 1:
+        print_debug("Center with k=1: "+str(int(kmeans_estimator.cluster_centers_[0,0])))
+        return int(kmeans_estimator.cluster_centers_[0,0]), None
+
     # Calculate regular center
     print_debug("Centers: "+str(kmeans_estimator.cluster_centers_))
     center = int(abs((kmeans_estimator.cluster_centers_[1,0]-kmeans_estimator.cluster_centers_[0,0])/2))
     print_debug("Center: "+str(center))
-    
+
     # Calculate population per cluster
     kmeans_estimator_group0_pop = 0
     kmeans_estimator_group1_pop = 0
@@ -110,8 +114,11 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
     
     g_value_centers = []
     g_value_weighted_centers = []
+    g_value_centers_k1 = []
+    
     exg_value_centers = []
     exg_value_weighted_centers = []
+    exg_value_centers_k1 = []
         
     for drone_img_data in drone_images:
         print("\n### Processing second: "+str(drone_img_data[0]))
@@ -165,15 +172,21 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
 
         # Compute K-means centers for the RGB image
         print_debug("## Computing K-means for the RGB image")
-        g_value_center, g_value_weighted_center = get_k_means_centers(g_value_kmeans_array)
+        g_value_center, g_value_weighted_center = get_k_means_centers(g_value_kmeans_array,2)
         g_value_centers.append(g_value_center)
         g_value_weighted_centers.append(g_value_weighted_center)
-
+        # K-means for k=1
+        g_value_center_k1, g_value_weighted_center_k1 = get_k_means_centers(g_value_kmeans_array,1)
+        g_value_centers_k1.append(g_value_center_k1)
+        
         # Compute K-means centers for the ExG image
         print_debug("## Computing K-means for the ExG image")
-        exg_value_center, exg_value_weighted_center = get_k_means_centers(exg_value_kmeans_array)
+        exg_value_center, exg_value_weighted_center = get_k_means_centers(exg_value_kmeans_array,2)
         exg_value_centers.append(exg_value_center)
         exg_value_weighted_centers.append(exg_value_weighted_center)
+        # K-means for k=1
+        exg_value_center_k1, exg_value_weighted_center_k1 = get_k_means_centers(exg_value_kmeans_array,1)
+        exg_value_centers_k1.append(exg_value_center_k1)
         
         if generate_images == True:
             drone_img = Image.new('RGB', (width, height))
@@ -182,7 +195,9 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
             drone_img_bw_exg = Image.new('1', (width, height))
             drone_img_bw_weighted_rgb = Image.new('1', (width, height))
             drone_img_bw_weighted_exg = Image.new('1', (width, height))
-            drone_img_2x3 = Image.new('RGB', (3*width, 2*height))
+            drone_img_bw_k1_rgb = Image.new('1', (width, height))
+            drone_img_bw_k1_exg = Image.new('1', (width, height))
+            drone_img_2x4 = Image.new('RGB', (2*width, 4*height))
 
             # RGB and green scale images
             rgb_tuples = []
@@ -192,6 +207,8 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
             bw_exg_tuples = []
             bw_weighted_rgb_tuples = []
             bw_weighted_exg_tuples = []
+            bw_k1_rgb_tuples = []
+            bw_k1_exg_tuples = []
 
             for i in range(0, height*row_length, 3):
                 r_value=int.from_bytes(drone_img_data[2][i],"little")
@@ -227,27 +244,45 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
                 else:
                     bw_weighted_exg_tuples.append(0)
 
+                if (g_value >= g_value_center_k1):
+                    bw_k1_rgb_tuples.append(1)
+                else:
+                    bw_k1_rgb_tuples.append(0)
+
+                if (exg_bw_normalized >= exg_value_center_k1):
+                    bw_k1_exg_tuples.append(1)
+                else:
+                    bw_k1_exg_tuples.append(0)
+
             # Original RGB image
             drone_img.putdata(rgb_tuples)
-            drone_img_2x3.paste(drone_img,(0,0))
+            drone_img_2x4.paste(drone_img,(0,0))
             # BW (gray scale) from ExG index
             drone_img_grayscale.putdata(gs_tuples)
-            drone_img_2x3.paste(drone_img_grayscale,(0,height))
+            drone_img_2x4.paste(drone_img_grayscale,(width,0))
             # BW (monochrome) filtered from RGB with k-means centroid
             drone_img_bw_rgb.putdata(bw_rgb_tuples)
-            drone_img_2x3.paste(drone_img_bw_rgb,(width,0))
+            drone_img_2x4.paste(drone_img_bw_rgb,(0,height))
             # BW (monochrome) filtered from RGB with k-means centroid with weights by cluster population
             drone_img_bw_weighted_rgb.putdata(bw_weighted_rgb_tuples)
-            drone_img_2x3.paste(drone_img_bw_weighted_rgb,(2*width,0))
+            drone_img_2x4.paste(drone_img_bw_weighted_rgb,(0,2*height))
+            # BW (monochrome) filtered from RGB with k-means with k=1
+            drone_img_bw_k1_rgb.putdata(bw_k1_rgb_tuples)
+            drone_img_2x4.paste(drone_img_bw_k1_rgb,(0,3*height))
+
             # BW (monochrome) filtered from ExG with k-means centroid
             drone_img_bw_exg.putdata(bw_exg_tuples)
-            drone_img_2x3.paste(drone_img_bw_exg,(width,height))
+            drone_img_2x4.paste(drone_img_bw_exg,(width,height))
             # BW (monochrome) filtered from ExG with k-means centroid with weights by cluster population
             drone_img_bw_weighted_exg.putdata(bw_weighted_exg_tuples)
-            drone_img_2x3.paste(drone_img_bw_weighted_exg,(2*width,height))
+            drone_img_2x4.paste(drone_img_bw_weighted_exg,(width,2*height))
+            # BW (monochrome) filtered from ExG with k-means with k=1
+            drone_img_bw_k1_exg.putdata(bw_k1_exg_tuples)
+            drone_img_2x4.paste(drone_img_bw_k1_exg,(width,3*height))
+
             # Save full image to disk
-            drone_img_2x3_path=image_base_path+"/vegetation_indexes__drone_"+str(drone_id)+"_mission_"+str(mission_id)+"_image_"+str(drone_img_data[0])+"."+str(drone_img_data[1])+".png"
-            drone_img_2x3.save(drone_img_2x3_path)
+            drone_img_2x4_path=image_base_path+"/vegetation_indexes__drone_"+str(drone_id)+"_mission_"+str(mission_id)+"_image_"+str(drone_img_data[0])+"."+str(drone_img_data[1])+".png"
+            drone_img_2x4.save(drone_img_2x4_path)
             
             # Plot histograms
             for idx in range(len(g_value_histogram_list)):
@@ -271,8 +306,8 @@ def process_images_drone_mission(drone_id=1, mission_id=1, image_base_path="~", 
     exg_weighted_avg_value_cutoff = int(sum(exg_value_weighted_centers) / len(exg_value_weighted_centers))
 
     print("# Images processed: "+str(len(drone_images)))
-    print("# Centers for RGB: "+str(g_value_centers)  +"\n(weighted): "+str(g_value_weighted_centers))
-    print("# Centers for ExG: "+str(exg_value_centers)+"\n(weighted): "+str(exg_value_weighted_centers))
+    print("# Centers for RGB: "+str(g_value_centers)  +"\n(weighted): "+str(g_value_weighted_centers)+"\n(k=1): "+str(g_value_centers_k1))
+    print("# Centers for ExG: "+str(exg_value_centers)+"\n(weighted): "+str(exg_value_weighted_centers)+"\n(k=1): "+str(exg_value_centers_k1))
     print("# RGB value average cutoff: "+str(g_avg_value_cutoff)  +"  (weighted): "+str(g_weighted_avg_value_cutoff))
     print("# ExG average value cutoff: "+str(exg_avg_value_cutoff)+"  (weighted): "+str(exg_weighted_avg_value_cutoff))
 
